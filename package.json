@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-schedule-range",
-	"version": "0.1.2",
+	"version": "0.1.3",
 	"description": "A Schedule Trigger for n8n that only fires within an optional start/end date range, configurable per rule.",
 	"license": "MIT",
 	"homepage": "https://github.com/xeladotbe/n8n-nodes-schedule-range",
