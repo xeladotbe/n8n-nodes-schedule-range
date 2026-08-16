@@ -11,6 +11,8 @@
  * the vast majority of hand-written cron strings.
  */
 
+import { sleep } from 'n8n-workflow';
+
 const MONTH_NAMES: Record<string, number> = {
 	JAN: 1,
 	FEB: 2,
@@ -343,9 +345,14 @@ export function getNextRun(cronExpression: string, after: Date, timeZone = 'UTC'
  * malformed cron expression throws immediately - at activation time, same as
  * this node's date-range validation - rather than failing silently on the
  * first would-be tick.
+ *
+ * Built on `sleep()` from `n8n-workflow` (with an `AbortSignal` for
+ * cancellation) rather than raw `setTimeout`/`clearTimeout` - n8n's verified
+ * community-node lint rule (`no-restricted-globals`) forbids the raw timer
+ * globals so their usage stays centralised and cancellable.
  */
 export class CronScheduler {
-	private timer: ReturnType<typeof setTimeout> | null = null;
+	private readonly abortController = new AbortController();
 
 	private stopped = false;
 
@@ -355,22 +362,27 @@ export class CronScheduler {
 		private readonly callback: () => void,
 	) {
 		const first = getNextRun(this.cronExpression, new Date(), this.timeZone);
-		this.arm(first);
+		void this.run(first);
 	}
 
-	private arm(next: Date): void {
-		const delayMs = Math.max(next.getTime() - Date.now(), 0);
-		this.timer = setTimeout(() => {
-			this.callback();
+	private async run(next: Date): Promise<void> {
+		while (!this.stopped) {
+			const delayMs = Math.max(next.getTime() - Date.now(), 0);
+			try {
+				await sleep(delayMs, this.abortController.signal);
+			} catch {
+				return; // aborted via stop()
+			}
 			if (this.stopped) return;
+			this.callback();
 			// Schedule from the fired time, not `Date.now()`, so a slow callback
 			// can't push later occurrences later than the cron expression intends.
-			this.arm(getNextRun(this.cronExpression, next, this.timeZone));
-		}, delayMs);
+			next = getNextRun(this.cronExpression, next, this.timeZone);
+		}
 	}
 
 	stop(): void {
 		this.stopped = true;
-		if (this.timer) clearTimeout(this.timer);
+		this.abortController.abort();
 	}
 }

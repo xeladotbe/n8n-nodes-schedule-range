@@ -1,3 +1,5 @@
+import { sleep } from 'n8n-workflow';
+
 import {
 	CronScheduler,
 	getNextRun,
@@ -213,16 +215,14 @@ describe('CronScheduler', () => {
 		});
 	}, 5000);
 
-	it('does not fire again after stop() is called', (done) => {
+	it('does not fire again after stop() is called', async () => {
 		let fireCount = 0;
 		const scheduler = new CronScheduler('*/1 * * * * *', 'UTC', () => {
 			fireCount++;
 		});
 		scheduler.stop();
-		setTimeout(() => {
-			expect(fireCount).toBe(0);
-			done();
-		}, 1500);
+		await sleep(1500);
+		expect(fireCount).toBe(0);
 	}, 5000);
 
 	it('throws synchronously at construction for an unparseable expression', () => {
