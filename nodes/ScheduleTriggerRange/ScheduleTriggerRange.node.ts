@@ -17,7 +17,7 @@ import {
 } from './RangeSchedule';
 
 /**
- * Collapsed-panel title for each Trigger Rule: the user's own Custom Name if
+ * Collapsed-panel title for each Trigger Rule: the user's own Rule Name if
  * set, otherwise a summary of the rule's actual configuration (e.g. "Every 3
  * Days", "Cron: 0 6 * * *") - rather than n8n's generic default of "Interval
  * 1", "Interval 2", etc. Evaluated by the editor against `$collection.item.value`
@@ -37,9 +37,10 @@ const RULE_ITEM_TITLE_EXPRESSION =
 
 // Trigger nodes must not set `usableAsTool` at all - n8n's verified
 // community-node scanner rejects it even as `false` ("Trigger nodes cannot
-// be invoked as AI tools and doing so pollutes the tool picker"). This is
-// more specific than our local generic rule below, which doesn't know this
-// node is a trigger.
+// be invoked as AI tools and doing so pollutes the tool picker"). Kept
+// removed even though cloud-support/verified linting is off locally again -
+// this is correct regardless, not just a verification nicety. Our local
+// (non-cloud) rule doesn't know that, hence the disable below.
 // eslint-disable-next-line @n8n/community-nodes/node-usable-as-tool
 export class ScheduleTriggerRange implements INodeType {
 	description: INodeTypeDescription = {
@@ -62,7 +63,7 @@ export class ScheduleTriggerRange implements INodeType {
 		properties: [
 			{
 				displayName:
-					"Each Trigger Rule below can optionally have its own Start Date / End Date window (under 'Window', scroll down within a rule to find it). A rule with no dates set is always active. Ticks outside a rule's window are silently skipped - no item is emitted and no error is thrown.",
+					"Each Trigger Rule below can optionally have its own Start Date / End Date range (under 'Range', scroll down within a rule to find it). A rule with no dates set is always active. Ticks outside a rule's range are silently skipped - no item is emitted and no error is thrown.",
 				name: 'notice',
 				type: 'notice',
 				default: '',
@@ -76,8 +77,8 @@ export class ScheduleTriggerRange implements INodeType {
 					multipleValues: true,
 					sortable: true,
 					// Falls back to the rule's own configuration (e.g. "Every 3 Days",
-					// "Cron: 0 6 * * *") when Custom Name is left empty, rather than
-					// the generic "Interval 1" n8n would otherwise show.
+					// "Cron: 0 6 * * *") when Rule Name is left empty, rather than the
+					// generic "Interval 1" n8n would otherwise show.
 					fixedCollection: {
 						itemTitle: RULE_ITEM_TITLE_EXPRESSION,
 					},
@@ -87,56 +88,14 @@ export class ScheduleTriggerRange implements INodeType {
 					{
 						name: 'interval',
 						displayName: 'Interval',
-						// Alphabetical by displayName - n8n's verified community-node
-						// scanner enforces this and ignores inline eslint-disable
-						// comments, so a deliberately different UX order isn't an
-						// option here. "Trigger Interval" and "Rule Name" are labelled
-						// "Cadence" and "Custom Name" instead - genuine, equally clear
-						// synonyms that happen to sort first, so the field that controls
-						// which others are visible still appears at the top instead of
-						// buried mid-list; "Range" is "Window" for the same reason, so
-						// the optional date bounds land near the bottom. displayOptions.show
-						// still keeps each field visible only for its relevant Cadence.
+						// Deliberately ordered: Trigger Interval first, then the fields
+						// relevant to whichever unit is selected, then Range (Start/End
+						// Date) last - rather than alphabetically, which scattered
+						// related fields apart and buried Trigger Interval in the middle.
+						// eslint-disable-next-line n8n-nodes-base/node-param-fixed-collection-type-unsorted-items
 						values: [
 							{
-								displayName: 'Cadence',
-								name: 'field',
-								type: 'options',
-								default: 'days',
-								// Alphabetical by name - see the note on `values` above.
-								options: [
-									{
-										name: 'Cron Expression',
-										value: 'cronExpression',
-									},
-									{
-										name: 'Days',
-										value: 'days',
-									},
-									{
-										name: 'Hours',
-										value: 'hours',
-									},
-									{
-										name: 'Minutes',
-										value: 'minutes',
-									},
-									{
-										name: 'Months',
-										value: 'months',
-									},
-									{
-										name: 'Seconds',
-										value: 'seconds',
-									},
-									{
-										name: 'Weeks',
-										value: 'weeks',
-									},
-								],
-							},
-							{
-								displayName: 'Custom Name',
+								displayName: 'Rule Name',
 								name: 'ruleName',
 								type: 'string',
 								default: '',
@@ -145,41 +104,57 @@ export class ScheduleTriggerRange implements INodeType {
 									"Optional label shown for this rule instead of its auto-generated summary (e.g. \"Every 3 Days\"). Leave empty to use the summary.",
 							},
 							{
-								displayName: 'Days Between Triggers',
-								name: 'daysInterval',
+								displayName: 'Trigger Interval',
+								name: 'field',
+								type: 'options',
+								default: 'days',
+								// Deliberately ordered by granularity (seconds -> ... -> cron
+								// expression), matching n8n's native Schedule Trigger, rather
+								// than alphabetically - alphabetical would put "Cron
+								// Expression" first, which is worse UX for this field.
+								// eslint-disable-next-line n8n-nodes-base/node-param-options-type-unsorted-items
+								options: [
+									{
+										name: 'Seconds',
+										value: 'seconds',
+									},
+									{
+										name: 'Minutes',
+										value: 'minutes',
+									},
+									{
+										name: 'Hours',
+										value: 'hours',
+									},
+									{
+										name: 'Days',
+										value: 'days',
+									},
+									{
+										name: 'Weeks',
+										value: 'weeks',
+									},
+									{
+										name: 'Months',
+										value: 'months',
+									},
+									{
+										name: 'Cron Expression',
+										value: 'cronExpression',
+									},
+								],
+							},
+							{
+								displayName: 'Seconds Between Triggers',
+								name: 'secondsInterval',
 								type: 'number',
 								displayOptions: {
 									show: {
-										field: ['days'],
+										field: ['seconds'],
 									},
 								},
-								default: 1,
-								hint: 'Must be in range 1-31',
-							},
-							{
-								displayName: 'Expression',
-								name: 'expression',
-								type: 'string',
-								displayOptions: {
-									show: {
-										field: ['cronExpression'],
-									},
-								},
-								default: '',
-								placeholder: 'eg. 0 15 * 1 sun',
-								hint: 'Format: ([Second	]) [Minute]	[Hour]	[Day of Month]	[Month]	[Day of Week]',
-							},
-							{
-								displayName: 'Hours Between Triggers',
-								name: 'hoursInterval',
-								type: 'number',
-								displayOptions: {
-									show: {
-										field: ['hours'],
-									},
-								},
-								default: 1,
-								hint: 'Must be in range 1-23',
+								default: 30,
+								hint: 'Must be in range 1-59',
 							},
 							{
 								displayName: 'Minutes Between Triggers',
@@ -194,6 +169,83 @@ export class ScheduleTriggerRange implements INodeType {
 								hint: 'Must be in range 1-59',
 							},
 							{
+								displayName: 'Hours Between Triggers',
+								name: 'hoursInterval',
+								type: 'number',
+								displayOptions: {
+									show: {
+										field: ['hours'],
+									},
+								},
+								default: 1,
+								hint: 'Must be in range 1-23',
+							},
+							{
+								displayName: 'Days Between Triggers',
+								name: 'daysInterval',
+								type: 'number',
+								displayOptions: {
+									show: {
+										field: ['days'],
+									},
+								},
+								default: 1,
+								hint: 'Must be in range 1-31',
+							},
+							{
+								displayName: 'Weeks Between Triggers',
+								name: 'weeksInterval',
+								type: 'number',
+								displayOptions: {
+									show: {
+										field: ['weeks'],
+									},
+								},
+								default: 1,
+								hint: 'Runs every week when left at 1',
+							},
+							{
+								displayName: 'Trigger on Weekdays',
+								name: 'weekday',
+								type: 'multiOptions',
+								displayOptions: {
+									show: {
+										field: ['weeks'],
+									},
+								},
+								default: [0],
+								options: [
+									{
+										name: 'Monday',
+										value: 1,
+									},
+									{
+										name: 'Tuesday',
+										value: 2,
+									},
+									{
+										name: 'Wednesday',
+										value: 3,
+									},
+									{
+										name: 'Thursday',
+										value: 4,
+									},
+									{
+										name: 'Friday',
+										value: 5,
+									},
+									{
+										name: 'Saturday',
+										value: 6,
+									},
+									{
+										name: 'Sunday',
+										value: 0,
+									},
+								],
+							},
+							{
 								displayName: 'Months Between Triggers',
 								name: 'monthsInterval',
 								type: 'number',
@@ -203,18 +255,6 @@ export class ScheduleTriggerRange implements INodeType {
 									},
 								},
 								default: 1,
-							},
-							{
-								displayName: 'Seconds Between Triggers',
-								name: 'secondsInterval',
-								type: 'number',
-								displayOptions: {
-									show: {
-										field: ['seconds'],
-									},
-								},
-								default: 30,
-								hint: 'Must be in range 1-59',
 							},
 							{
 								displayName: 'Trigger at Day of Month',
@@ -349,60 +389,32 @@ export class ScheduleTriggerRange implements INodeType {
 								default: 0,
 							},
 							{
-								displayName: 'Trigger on Weekdays',
-								name: 'weekday',
-								type: 'multiOptions',
+								displayName:
+									'You can find help generating your cron expression <a href="https://crontab.guru/examples.html" target="_blank">here</a>',
+								name: 'notice_cron_help',
+								type: 'notice',
 								displayOptions: {
 									show: {
-										field: ['weeks'],
+										field: ['cronExpression'],
 									},
 								},
-								default: [0],
-								options: [
-									{
-										name: 'Monday',
-										value: 1,
-									},
-									{
-										name: 'Tuesday',
-										value: 2,
-									},
-									{
-										name: 'Wednesday',
-										value: 3,
-									},
-									{
-										name: 'Thursday',
-										value: 4,
-									},
-									{
-										name: 'Friday',
-										value: 5,
-									},
-									{
-										name: 'Saturday',
-										value: 6,
-									},
-									{
-										name: 'Sunday',
-										value: 0,
-									},
-								],
+								default: '',
 							},
 							{
-								displayName: 'Weeks Between Triggers',
-								name: 'weeksInterval',
-								type: 'number',
+								displayName: 'Expression',
+								name: 'expression',
+								type: 'string',
 								displayOptions: {
 									show: {
-										field: ['weeks'],
+										field: ['cronExpression'],
 									},
 								},
-								default: 1,
-								hint: 'Runs every week when left at 1',
+								default: '',
+								placeholder: 'eg. 0 15 * 1 sun',
+								hint: 'Format: ([Second	]) [Minute]	[Hour]	[Day of Month]	[Month]	[Day of Week]',
 							},
 							{
-								displayName: 'Window',
+								displayName: 'Range',
 								name: 'range',
 								type: 'collection',
 								placeholder: 'Add Date',
@@ -425,18 +437,6 @@ export class ScheduleTriggerRange implements INodeType {
 											'Ticks from this rule after this date/time are skipped. Leave unset for no upper bound.',
 									},
 								],
-							},
-							{
-								displayName:
-									'You can find help generating your cron expression <a href="https://crontab.guru/examples.html" target="_blank">here</a>',
-								name: 'notice_cron_help',
-								type: 'notice',
-								displayOptions: {
-									show: {
-										field: ['cronExpression'],
-									},
-								},
-								default: '',
 							},
 						],
 					},

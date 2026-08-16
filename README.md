@@ -69,9 +69,9 @@ container recreation.
 1. Add the **Schedule Trigger (with Range)** node as your workflow's
    trigger.
 2. Add one or more **Trigger Rules**, configured exactly like the native
-   Schedule Trigger via the **Cadence** field (seconds / minutes / hours /
-   days / weeks / months / raw cron expression).
-3. Within a rule, expand **Window** and optionally add **Start Date**
+   Schedule Trigger (seconds / minutes / hours / days / weeks / months /
+   raw cron expression).
+3. Within a rule, expand **Range** and optionally add **Start Date**
    and/or **End Date**. Leave either unset for an open-ended range on
    that side. Leave both unset for a rule that's always active.
 4. Activate the workflow. A rule whose Start Date is not strictly before

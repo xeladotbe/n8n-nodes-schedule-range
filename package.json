@@ -31,7 +31,7 @@
 	],
 	"n8n": {
 		"n8nNodesApiVersion": 1,
-		"strict": true,
+		"strict": false,
 		"credentials": [],
 		"nodes": [
 			"dist/nodes/ScheduleTriggerRange/ScheduleTriggerRange.node.js"

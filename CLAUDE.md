@@ -53,41 +53,44 @@ deliberately narrow in scope (numeric cron fields only - no month/weekday
 names, no `L`/`W`/`#`) since that covers everything this node itself
 generates plus the vast majority of hand-written expressions.
 
-## Cloud support / verified-node lint is enabled
+## Why cloud support is disabled
 
-`eslint.config.mjs` uses the default `config` (not
-`configWithoutCloudSupport`), and `package.json` has `"n8n.strict": true`.
-This used to be disabled, on the assumption that flow-control nodes (this
-one doesn't integrate a third-party service) aren't eligible for
-verification at all - but n8n's Creator Portal automated pre-check runs
-this same strict ruleset against every submission regardless, so keeping
-it enabled locally means `npm run lint` now catches these issues before
-submission instead of only after a failed review. Two real findings from a
-failed submission (v0.1.1) drove this:
+`eslint.config.mjs` uses `configWithoutCloudSupport`, and `package.json`
+has `"strict": false`. This is a deliberate choice: n8n's Creator Portal
+verification was attempted once (see "Verification attempt" below) and
+abandoned as not worth the trade-offs for a small utility node, so the
+stricter cloud/verified ruleset isn't worth enforcing locally either -
+`configWithoutCloudSupport` matches what's actually being optimized for
+(good UX, not verification eligibility).
 
-- `@n8n/community-nodes/no-restricted-globals` - raw `setTimeout`/
-  `clearTimeout` forbidden; see `CronEngine.ts`'s use of `sleep()` above.
-- `@n8n/community-nodes/node-usable-as-tool` - conflicts here: the generic
-  rule wants every node to set `usableAsTool`, but trigger nodes must
-  *omit* it entirely (verified separately, more specifically). Resolved
-  with a targeted `eslint-disable-next-line` on the class declaration.
+Two findings from that attempt were kept anyway, since they're correct
+independent of verification:
 
-The verified-node scanner also enforces **strict alphabetical order by
-`displayName`** within any `fixedCollection`'s `values` array (rule
-`node-param-fixed-collection-type-unsorted-items`) and ignores inline
-`eslint-disable` comments entirely when doing so - unlike our local lint,
-which does respect them. This forced the Trigger Rule fields into
-alphabetical order. To avoid burying the field that controls which others
-are visible (originally "Trigger Interval") in the middle of the list,
-it's relabelled **"Cadence"** and "Rule Name" is relabelled **"Custom
-Name"** - genuine, equally clear synonyms that happen to alphabetize to
-the top. "Range" is relabelled **"Window"** for the same reason, landing
-near the bottom. This is *not* a numeric-prefix hack (e.g. "0. Cadence")
-- deliberately avoided since it would be visibly gamed and could fail a
-manual review; these are real word choices, just chosen for where they
-sort. The `name` (parameter id) for each field is unchanged - only the
-user-visible `displayName` differs - so none of this affects
-`RangeSchedule.ts` or `trigger()`.
+- `CronScheduler` (`CronEngine.ts`) uses `sleep()` from `n8n-workflow`
+  (with an `AbortSignal` for cancellation) instead of raw
+  `setTimeout`/`clearTimeout`. Functionally equivalent, just cleaner.
+- `usableAsTool` is not set on the node class at all (trigger nodes can't
+  be used as AI tools; n8n's own rule wanting every node to set it doesn't
+  know that, hence the `eslint-disable-next-line` on the class
+  declaration).
+
+Everything else from that attempt - alphabetical field ordering and the
+"Cadence"/"Custom Name"/"Window" relabelling used to work around it - was
+reverted. See git history (commit "Fix n8n Creator Portal verification
+failures" and its revert) if resuming verification later.
+
+## Verification attempt
+
+Submitted once to n8n's Creator Portal for community-node verification
+(v0.1.1). The automated pre-check failed; fixing it required alphabetizing
+the Trigger Rule fields (the verified scanner enforces this and ignores
+`eslint-disable` comments) and relabelling fields to work around burying
+the field-visibility selector mid-list, plus n8n also requires a short
+screen-recorded demo video per submission. Decided the effort/UX trade-off
+wasn't worth it for a small utility node - not currently pursuing
+verification. The package remains fully installable via
+`npm install n8n-nodes-schedule-range` or n8n's community-node installer
+regardless of verified status.
 
 ## Known scope limits (see README's "Scope limitations" section)
 
@@ -102,16 +105,15 @@ boundary) - the timezone math in particular is easy to get subtly wrong.
 
 ## Publishing status
 
-Published on npm as `n8n-nodes-schedule-range` (v0.1.1 as of this
+Published on npm as `n8n-nodes-schedule-range` (v0.1.2 as of this
 handoff), repo at `github.com/xeladotbe/n8n-nodes-schedule-range` (default
 branch `main`). npm Trusted Publisher is configured for
 `.github/workflows/publish.yml`, so `npm run release` (bumps version,
 tags, pushes) triggers an automatic OIDC-authenticated publish via GitHub
 Actions - no manual `npm publish` needed for subsequent releases.
 
-Submitted once for n8n's Creator Portal verification; the automated
-pre-check failed on v0.1.1 for the reasons captured in "Cloud support /
-verified-node lint is enabled" above. Not yet resubmitted after the fix.
+Not submitted for n8n's Creator Portal verification - see "Verification
+attempt" above for why.
 
 ## Conventions this project follows
 
