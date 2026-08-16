@@ -1,0 +1,52 @@
+{
+	"name": "n8n-nodes-schedule-range",
+	"version": "0.1.0",
+	"description": "A Schedule Trigger for n8n that only fires within an optional start/end date range, configurable per rule.",
+	"license": "MIT",
+	"homepage": "https://github.com/xeladotbe/n8n-nodes-schedule-range",
+	"keywords": [
+		"n8n-community-node-package"
+	],
+	"author": {
+		"name": "Alexander Martin",
+		"email": "alex@xela.be"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/xeladotbe/n8n-nodes-schedule-range.git"
+	},
+	"scripts": {
+		"build": "n8n-node build",
+		"build:watch": "tsc --watch",
+		"dev": "n8n-node dev",
+		"lint": "n8n-node lint",
+		"lint:fix": "n8n-node lint --fix",
+		"test": "jest",
+		"release": "n8n-node release",
+		"prepublishOnly": "n8n-node prerelease"
+	},
+	"files": [
+		"dist"
+	],
+	"n8n": {
+		"n8nNodesApiVersion": 1,
+		"strict": false,
+		"credentials": [],
+		"nodes": [
+			"dist/nodes/ScheduleTriggerRange/ScheduleTriggerRange.node.js"
+		]
+	},
+	"devDependencies": {
+		"@n8n/node-cli": "*",
+		"@types/jest": "^29.5.14",
+		"eslint": "9.39.4",
+		"jest": "^29.7.0",
+		"prettier": "3.8.3",
+		"release-it": "20.2.0",
+		"ts-jest": "^29.4.12",
+		"typescript": "5.9.3"
+	},
+	"peerDependencies": {
+		"n8n-workflow": "*"
+	}
+}
