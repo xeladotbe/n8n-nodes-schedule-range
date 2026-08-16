@@ -44,25 +44,25 @@ dates". Common cases where that's missing:
 
 ## Install
 
-This package is not yet published to the npm registry, so the in-app
-**Settings → Community Nodes → Install** flow (which installs by package
-name from npm) doesn't apply yet. Until then, install manually from a
-built tarball:
+**In the n8n UI** (recommended): go to **Settings → Community Nodes →
+Install a community node**, and enter `n8n-nodes-schedule-range`. Requires
+`N8N_COMMUNITY_PACKAGES_ENABLED=true` (the default) in your n8n
+environment.
+
+**Manually**, e.g. for a self-hosted/Docker instance without the UI
+installer enabled:
 
 ```bash
-# On the machine running n8n (or copied in via `docker cp`):
-docker cp n8n-nodes-schedule-range-0.1.0.tgz n8n:/tmp/
-docker exec -it n8n sh
+docker exec -it <your-n8n-container> sh
 cd ~/.n8n/nodes
-npm install /tmp/n8n-nodes-schedule-range-0.1.0.tgz
+npm install n8n-nodes-schedule-range
 exit
-docker restart n8n
+docker restart <your-n8n-container>
 ```
 
 `~/.n8n/nodes` is n8n's manual community-node install location - it's part
 of the same persistent volume as your workflows, so this survives
-container recreation. Requires `N8N_COMMUNITY_PACKAGES_ENABLED=true` in
-your n8n environment.
+container recreation.
 
 ## Usage
 
